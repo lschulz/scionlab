@@ -1,0 +1,3 @@
+[submodule "scionlab_ixp"]
+	path = scionlab_ixp
+	url = https://github.com/lschulz/scionlab-ixp

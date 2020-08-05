@@ -79,6 +79,10 @@ urlpatterns = [
     path('api/v2/host/<slug:uid>/deployed_config_version',
          PostHostDeployedConfigVersion.as_view(),
          name='api_post_deployed_version'),
+
+    # Peering API:
+    path('api/peering/', include('scionlab_ixp.urls')),
+
     # no longer supported versions of the API
     re_path(r'^api/host/', gone)
 ]
