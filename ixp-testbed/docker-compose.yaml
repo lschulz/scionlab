@@ -1,0 +1,77 @@
+version: '2.4' # Docker Compose 3.x does not support setting CPU affinity anymore.
+
+services:
+  db:
+    image: postgres
+    cpuset: ${COORD_CPUSET-}
+    environment:
+      - POSTGRES_DB=portgres
+      - POSTGRES_USER=scionlab
+      - POSTGRES_PASSWORD=scionlab
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:5-alpine
+    cpuset: ${COORD_CPUSET-}
+    volumes:
+      - redisdata:/data
+
+  huey:
+    build:
+      context: ..
+      dockerfile: ixp-testbed/django/Dockerfile-django
+    command: /scionlab/manage.py run_huey -w 8
+    cpuset: ${COORD_CPUSET-}
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=portgres
+      - POSTGRES_USER=scionlab
+      - POSTGRES_PASSWORD=scionlab
+      - DJANGO_SETTINGS_MODULE=scionlab.settings.ixp_testbed
+      - SCIONLAB_SITE=${SCIONLAB_SITE:-http://127.0.0.1:8000}
+    depends_on:
+      - redis
+    volumes:
+      - run:/scionlab/run/:z
+
+  django:
+    build:
+      context: ..
+      dockerfile: ixp-testbed/django/Dockerfile-django
+    cpuset: ${COORD_CPUSET-}
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=portgres
+      - POSTGRES_USER=scionlab
+      - POSTGRES_PASSWORD=scionlab
+      - DJANGO_SETTINGS_MODULE=scionlab.settings.ixp_testbed
+      - SCIONLAB_SITE=${SCIONLAB_SITE:-http://127.0.0.1:8000}
+    depends_on:
+      - db
+    volumes:
+      - run:/scionlab/run/:z
+      - web-static:/scionlab/static/:z
+    expose:
+      - "8000"
+
+  caddy:
+    build:
+      context: ./caddy
+    cpuset: ${COORD_CPUSET-}
+    depends_on:
+      - django
+    ports:
+      - "${COORD_ADDR:-127.0.0.1:8000}:8000"
+    volumes:
+      - web-static:/var/www/scionlab/static/:z
+      - caddydata:/home/caddy/.caddy/
+
+volumes:
+  postgres:
+  redisdata:
+  run:
+  web-static:
+  caddydata:

@@ -19,26 +19,23 @@ import huey
 SCIONLAB_SITE = os.environ.get('SCIONLAB_SITE', 'http://localhost:8000')
 
 # ##### DEBUG CONFIGURATION ###############################
-DEBUG = True
-TEMPLATES[0]['OPTIONS']['debug'] = True
-CRISPY_FAIL_SILENTLY = not DEBUG
-
-# allow all hosts during development
 ALLOWED_HOSTS = ['*']
 
 # ##### DATABASE CONFIGURATION ############################
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'run', 'dev.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'HOST': os.environ.get('POSTGRES_HOST'),
+        'PORT': os.environ.get('POSTGRES_PORT'),
+        'NAME': os.environ.get('POSTGRES_DB'),
+        'USER': os.environ.get('POSTGRES_USER'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
         'ATOMIC_REQUESTS': True,
-    }
+    },
 }
 
-
 # ##### HUEY TASK QUEUE CONFIGURATION #####################
-HUEY = huey.SqliteHuey('scionlab-huey',
-                       filename=os.path.join(BASE_DIR, 'run', 'dev-huey.sqlite3'))
+HUEY = huey.RedisHuey('scionlab-huey', host='redis')
 
 # ##### APPLICATION CONFIGURATION #########################
 INSTALLED_APPS += [
@@ -56,16 +53,7 @@ RECAPTCHA_PRIVATE_KEY = '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe'
 # ##### MAILER CONFIGURATION ##############################
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-
 # ##### VPN CONFIG OVERRIDES ##############################
 VPN_CA_KEY_PASSWORD = 'sci0nl4b'
 VPN_CA_KEY_PATH = os.path.join(BASE_DIR, 'run', 'dev_root_ca_key.pem')
 VPN_CA_CERT_PATH = os.path.join(BASE_DIR, 'run', 'dev_root_ca_cert.pem')
-
-
-class VPNKeygenConfDev(VPNKeygenConf):
-    KEY_SIZE = 1024  # Shortest workable keys for faster tests.
-                     # Note: 512-bit can be generated, but cannot initiate openvpn connection.
-
-
-VPN_KEYGEN_CONFIG = VPNKeygenConfDev

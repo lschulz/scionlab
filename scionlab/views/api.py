@@ -28,6 +28,7 @@ from django.http import (
 )
 
 from scionlab import config_tar
+from scionlab import scion_config
 from scionlab.models.core import Host
 from scionlab.util.http import HttpResponseAttachment, basicauth
 from scionlab.util.archive import TarWriter
@@ -73,8 +74,29 @@ class GetHostConfig(SingleObjectMixin, View):
         if config_tar.is_empty_config(host):
             return HttpResponse(status=204)
 
+        # Extend API to support user ASes and infrastructure AS using supervisord
+        installation_type = request.GET.get('installation_type', 'PKG')
+
         # All good, return generate and return the config
-        return get_host_config_tar_response(host)
+        if installation_type == 'PKG':
+            return get_host_config_tar_response(host)
+        elif installation_type == 'SRC':
+            return _get_host_config_tar_response(host)
+        else:
+            return HttpResponseBadRequest()
+
+
+def _get_host_config_tar_response(host):
+    filename = '{host}_v{version}.tar.gz'.format(
+                    host=host.path_str(),
+                    version=host.config_version)
+
+    # Use the response as file-like object to write the tar
+    resp = HttpResponseAttachment(filename=filename, content_type='application/gzip')
+    with closing(tarfile.open(mode='w:gz', fileobj=resp)) as tar:
+        archive = TarWriter(tar)
+        config_tar._add_files_user_as_dedicated(archive, host, scion_config.ProcessControl.SUPERVISORD)
+    return resp
 
 
 def get_host_config_tar_response(host):

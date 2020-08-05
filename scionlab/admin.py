@@ -42,6 +42,7 @@ from scionlab.tasks import deploy_host_config
 from scionlab.views.api import get_host_config_tar_response
 # Needs to be after import of scionlab.models.user.User
 from django.contrib.auth.admin import UserAdmin as auth_UserAdmin
+from scionlab_ixp.models import IXPLink
 
 
 # TODO(matzf): This User model shows up under scionlab now in the admin index page, pitty.
@@ -699,9 +700,9 @@ class LinkAdminForm(_CreateUpdateModelForm):
 class LinkAdmin(admin.ModelAdmin):
     form = LinkAdminForm
 
-    list_display = ('__str__', 'type', 'active', 'public_ip_a', 'public_port_a', 'bind_ip_a',
+    list_display = ('__str__', 'type', 'ixp', 'active', 'public_ip_a', 'public_port_a', 'bind_ip_a',
                     'bind_port_a', 'public_ip_b', 'public_port_b', 'bind_ip_b', 'bind_port_b')
-    list_filter = ('type', 'active', 'interfaceA__AS', 'interfaceB__AS',)
+    list_filter = ('type', 'active', 'interfaceA__AS', 'interfaceB__AS')
 
     def public_ip_a(self, obj):
         return obj.interfaceA.get_public_ip()
@@ -726,6 +727,14 @@ class LinkAdmin(admin.ModelAdmin):
 
     def bind_port_b(self, obj):
         return obj.interfaceB.bind_port
+
+    def ixp(self, obj):
+        try:
+            ixplink = obj.ixplink
+        except IXPLink.DoesNotExist:
+            return "----"
+        else:
+            return str(ixplink.ixp)
 
 
 @admin.register(Host)

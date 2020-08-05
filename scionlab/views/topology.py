@@ -18,10 +18,11 @@ from graphviz import Graph
 from textwrap import fill
 
 from scionlab.models.core import ISD, Link
+from scionlab_ixp.models import IXPLink
 
 
-@cache_page(1 * 60 * 60)
-@cache_control(public=True, max_age=24 * 60 * 60)
+@cache_page(5)
+@cache_control(public=True, max_age=5)
 def topology_png(request):
     """
     Create graph with infrastructure ASes and links and draw it with dot a png.
@@ -54,12 +55,12 @@ def _topology_graph():
         # putting non-core ASes into a subgraph, without rank
         with g_isd.subgraph() as s:
             s.attr(rank='none')
-            for as_ in isd.ases.filter(owner=None, is_core=False):
+            for as_ in isd.ases.filter(is_core=False):
                 _add_as_node(s, as_)
 
         g.subgraph(g_isd)
 
-    for link in Link.objects.filter(interfaceA__AS__owner=None, interfaceB__AS__owner=None):
+    for link in Link.objects.all():
         _add_link(g, link)
 
     return g
@@ -83,6 +84,12 @@ def _add_link(g, link):
     if link.type == Link.PEER:
         attrs = {'style': 'dashed',
                  'constraint': 'false'}  # Don't rank peers
+    try:
+        ixp_id = link.ixplink.ixp_id
+    except IXPLink.DoesNotExist:
+        pass  # not an IXP link, keep default color
+    else:
+        attrs['color'] = _ixp_color(ixp_id)
     g.edge(str(as_a.pk), str(as_b.pk), _attributes=attrs)
 
 
@@ -104,7 +111,7 @@ def _isd_label(isd):
 
 
 def _as_label(as_):
-    return "%s\n%s" % (as_.as_id, fill(as_.label, 10))
+    return "%s\n%s" % (as_.as_id, fill(as_.label or "", 10))
 
 
 def _as_color(as_):
@@ -112,6 +119,8 @@ def _as_color(as_):
         return 'orangered'
     if hasattr(as_, 'attachment_point_info'):
         return 'darkgreen'
+    if as_.owner is not None:
+        return 'blue'
     return 'black'
 
 
@@ -120,4 +129,11 @@ def _as_fill_color(as_):
         return 'seashell1'
     if hasattr(as_, 'attachment_point_info'):
         return 'darkseagreen1'
+    if as_.owner is not None:
+        return 'lightskyblue'
     return 'gray99'
+
+
+def _ixp_color(ixp_id):
+    colors = ['black', 'blue', 'red', 'darkgreen']
+    return colors[ixp_id % len(colors)]

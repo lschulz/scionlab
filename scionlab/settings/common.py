@@ -112,7 +112,7 @@ GRAFANA_URL = "https://prometheus.scionlab.org"
 
 # Rate limit for host deployments, specified by the minimal time between
 # two consecutive deployments (value in seconds).
-DEPLOYMENT_PERIOD = 60
+DEPLOYMENT_PERIOD = 10
 
 # SSH Config file for managed hosts
 SSH_CONFIG_PATH = os.path.join(BASE_DIR, 'run', 'ssh_config')

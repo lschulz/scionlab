@@ -353,7 +353,7 @@ class _ConfigBuilder:
         """ Builds the 'metrics' configuration common to all services """
         return {
             'metrics': {
-                'prometheus': _join_host_port('127.0.0.1', prometheus_port)
+                'prometheus': _join_host_port('0.0.0.0', prometheus_port)
             },
         }
 

@@ -1,0 +1,9 @@
+:8000 {
+    root /var/www/scionlab
+    proxy / django:8000 {
+        except /static
+        transparent
+    }
+    log stdout
+    errors stderr
+}
